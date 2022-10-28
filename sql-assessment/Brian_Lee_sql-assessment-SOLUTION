@@ -1,0 +1,95 @@
+/*Question #0 (Already done for you as an example) Select the first 2 rows from the marketing data*/
+
+	select * from marketing_data limit 2;
+
+/*Question #1 Generate a query to get the sum of the clicks of the marketing data*/
+
+	SELECT SUM(clicks)
+	FROM marketing_data;
+
+/*Question #2 Generate a query to gather the sum of revenue by store_location from the store_revenue table*/
+
+	SELECT store_location,
+		SUM(revenue)
+	FROM store_revenue
+	GROUP BY store_location;
+
+	/*Get the store_location column and the sums of the revenue column
+	then run a group by to group the data together based on the location*/
+
+/*Question #3 Merge these two datasets so we can see impressions, clicks, and revenue together by date and geo.
+Please ensure all records from each table are accounted for.*/
+
+  SELECT marketing_data.date,
+    marketing_data.geo,
+    marketing_data.impressions,
+    marketing_data.clicks,
+    SUM(store_revenue.revenue) AS revenue
+	FROM marketing_data
+	LEFT JOIN store_revenue
+	ON (marketing_data.date=store_revenue.date
+	  AND marketing_data.geo=SUBSTRING(store_revenue.store_location, 15, 2))
+	GROUP BY marketing_data.date,
+	  marketing_data.geo;
+
+	/*Select the columns to see the date, geo location, impressions, clicks, and revenue. Do a Left Join
+	with the marketing_data table on the left and the store_revenue data on the right with the dates and
+	geographic locations being used as the related columns in both tables. Since geo in marketing_data
+	only contains the two-letter state code while the store_location values in store_revenue included
+	'United States-' followed by the two-letter state code, SUBSTRING() was used to only select the last
+	two letters in the string for the state. A Left Join was used in order to still account for the records
+	from the state of MN, which gets removed in a Full Outer Join. A Group By was done to group the data by
+	what state and on what date. SUM() was used on the revenue column in order to account for the different
+	brand_id in the store_revenue table. This just added all of the revenues together for each state so
+	that multiple records of the same state on the same day are not created and are just added together.*/
+
+/*Question #4 In your opinion, what is the most efficient store and why?*/
+
+	In my opinion, the most efficient store is the one in CA. This was determined by using
+	revenue per impression (RPI) as a metric. I decided to use impressions and revenue instead
+	of clicks because impressions and revenue represent the beginning and end of an advertising
+	process. When taking the sum of all of the revenues for each state and dividing it by the
+	sum of all of their impressions, CA has the highest RPI at 5.211. NY has 1.298 and TX has
+	0.286. I also decided to use averages in my calculations to see how that may affect the
+	values. The individual RPI for each record was calculated by dividing the revenue by the
+	impressions. Then all of the RPIs were grouped by state and averaged. CA still has the
+	highest average RPI at 4.503. NY has 1.105 and TX has 0.260.
+
+	SELECT marketing_data.geo,
+      SUM(store_revenue.revenue) / SUM(marketing_data.impressions) AS total_RPI
+	FROM marketing_data
+	FULL OUTER JOIN store_revenue
+	ON (marketing_data.date=store_revenue.date
+      AND marketing_data.geo=SUBSTRING(store_revenue.store_location, 15, 2))
+	GROUP BY marketing_data.geo;
+
+	/* Calculated RPI (revenue per impression) by dividing the total revenue sum
+	by the total impression sum of each state.*/
+
+	SELECT marketing_data.geo,
+      AVG(store_revenue.revenue / marketing_data.impressions) AS AVG_RPI
+	FROM marketing_data
+	FULL OUTER JOIN store_revenue
+	ON (marketing_data.date=store_revenue.date
+      AND marketing_data.geo=SUBSTRING(store_revenue.store_location, 15, 2))
+	GROUP BY marketing_data.geo;
+
+	/* Calculated RPI (revenue per impression) by dividing each individual record's
+	revenue by its impressions and then averaging all of the resulting values for
+	each state.*/
+
+/*Question #5 (Challenge) Generate a query to rank in order the top 10 revenue producing states*/
+
+	SELECT SUBSTRING(store_location, 15, 2) AS state,
+      SUM(revenue) AS revenue
+	FROM store_revenue
+	GROUP BY state
+	ORDER BY revenue DESC
+	LIMIT 10;
+
+	/*Got the store_location and revenue columns from the store_revenue table.
+	SUBSTRING() was used to just get the two-letter state and SUM() was used
+	to add up all of the revenue for each state. Data was grouped by state
+	and ordered based on each state's total revenue in descending order (the
+	top should be the state with the greatest revenue). Limit was set to 10
+	to only show the top 10 states.*/
